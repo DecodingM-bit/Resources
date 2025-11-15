@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="cache-control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="pragma" content="no-cache">
+    <meta http-equiv="expires" content="0">
     <title>Offline App</title>
     <style>
         * {
@@ -32,7 +35,7 @@
         .status {
             text-align: center;
             color: #fff;
-            margin-bottom: 30px;
+            margin-bottom: 10px;
             font-size: 14px;
         }
 
@@ -42,6 +45,13 @@
 
         .status.offline {
             color: #ef4444;
+        }
+
+        .version {
+            text-align: center;
+            color: #888;
+            font-size: 12px;
+            margin-bottom: 30px;
         }
 
         .card {
@@ -190,7 +200,8 @@
 <body>
     <div class="container">
         <h1>📱 Offline App</h1>
-        <div class="status" id="status">Online</div>
+        <div class="status" id="status">🔄 Loading...</div>
+        <div class="version" id="version">Version: 1.0</div>
 
         <!-- Todo -->
         <div class="card">
@@ -240,12 +251,67 @@
 
         <!-- Date and Time -->
         <div class="card">
-            <h2>🕐 Date & Time (UTC)</h2>
+            <h2>🕐 Date & Time (Local)</h2>
             <div class="date-time" id="dateTime"></div>
         </div>
     </div>
 
     <script>
+        // APP VERSION - Change this to force update across all browsers
+        const APP_VERSION = '1.0.1';
+        document.getElementById('version').textContent = 'Version: ' + APP_VERSION;
+
+        // Register Service Worker for offline support
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('data:application/javascript,' + encodeURIComponent(`
+                const CACHE_NAME = 'offline-app-cache-v1';
+                
+                self.addEventListener('install', (event) => {
+                    self.skipWaiting();
+                });
+                
+                self.addEventListener('activate', (event) => {
+                    event.waitUntil(
+                        caches.keys().then((cacheNames) => {
+                            return Promise.all(
+                                cacheNames.map((cacheName) => {
+                                    if (cacheName !== CACHE_NAME) {
+                                        return caches.delete(cacheName);
+                                    }
+                                })
+                            );
+                        })
+                    );
+                    self.clients.claim();
+                });
+                
+                self.addEventListener('fetch', (event) => {
+                    // Only cache GET requests
+                    if (event.request.method !== 'GET') {
+                        return;
+                    }
+                    
+                    event.respondWith(
+                        fetch(event.request)
+                            .then((response) => {
+                                // Cache successful responses
+                                if (response.ok) {
+                                    const cache = caches.open(CACHE_NAME);
+                                    cache.then((c) => c.put(event.request, response));
+                                }
+                                return response;
+                            })
+                            .catch(() => {
+                                // Return cached version if offline
+                                return caches.match(event.request);
+                            })
+                    );
+                });
+            `), { scope: '.' }).catch((err) => {
+                console.log('Service Worker registration failed:', err);
+            });
+        }
+
         // Update online/offline status
         function updateStatus() {
             const status = document.getElementById('status');
@@ -260,13 +326,22 @@
 
         window.addEventListener('online', updateStatus);
         window.addEventListener('offline', updateStatus);
-        updateStatus();
+        
+        // Initial status check (with small delay to ensure DOM is ready)
+        setTimeout(updateStatus, 100);
 
         // Update date and time
         function updateDateTime() {
             const now = new Date();
-            const utcString = now.toISOString().replace('T', ' ').substring(0, 19);
-            document.getElementById('dateTime').textContent = utcString;
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            
+            const dateTimeString = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+            document.getElementById('dateTime').textContent = dateTimeString;
         }
 
         setInterval(updateDateTime, 1000);
@@ -298,40 +373,58 @@
         function saveTodos() {
             const todos = Array.from(document.querySelectorAll('#todoList li'))
                 .map(li => li.textContent.replace('Delete', '').trim());
-            localStorage.setItem('todos', JSON.stringify(todos));
+            try {
+                localStorage.setItem('todos_v1', JSON.stringify(todos));
+            } catch (e) {
+                console.log('LocalStorage error:', e);
+            }
         }
 
         function loadTodos() {
-            const todos = JSON.parse(localStorage.getItem('todos') || '[]');
-            todos.forEach(todo => {
-                const li = document.createElement('li');
-                li.textContent = todo;
-                
-                const btn = document.createElement('button');
-                btn.textContent = 'Delete';
-                btn.className = 'delete';
-                btn.onclick = function() {
-                    li.remove();
-                    saveTodos();
-                };
-                
-                li.appendChild(btn);
-                document.getElementById('todoList').appendChild(li);
-            });
+            try {
+                const todos = JSON.parse(localStorage.getItem('todos_v1') || '[]');
+                todos.forEach(todo => {
+                    if (todo) {
+                        const li = document.createElement('li');
+                        li.textContent = todo;
+                        
+                        const btn = document.createElement('button');
+                        btn.textContent = 'Delete';
+                        btn.className = 'delete';
+                        btn.onclick = function() {
+                            li.remove();
+                            saveTodos();
+                        };
+                        
+                        li.appendChild(btn);
+                        document.getElementById('todoList').appendChild(li);
+                    }
+                });
+            } catch (e) {
+                console.log('Error loading todos:', e);
+            }
         }
 
         // NOTES
         function saveNote() {
             const text = document.getElementById('noteInput').value;
             document.getElementById('noteDisplay').textContent = text;
-            localStorage.setItem('note', text);
+            try {
+                localStorage.setItem('note_v1', text);
+            } catch (e) {
+                console.log('LocalStorage error:', e);
+            }
             document.getElementById('noteInput').value = '';
         }
 
         function loadNote() {
-            const note = localStorage.getItem('note') || '';
-            if (note) {
-                document.getElementById('noteDisplay').textContent = note;
+            try {
+                const note = localStorage.getItem('note_v1') || '';
+                if (note) {
+                    document.getElementById('noteDisplay').textContent = note;
+                }
+            } catch (e) {
+                console.log('Error loading note:', e);
             }
         }
 
@@ -339,7 +432,7 @@
         let calcValue = '0';
 
         function appendCalc(val) {
-            if (calcValue === '0') {
+            if (calcValue === '0' && val !== '.') {
                 calcValue = val;
             } else {
                 calcValue += val;
@@ -378,8 +471,19 @@
         });
 
         // Load data on page load
-        loadTodos();
-        loadNote();
+        window.addEventListener('load', function() {
+            loadTodos();
+            loadNote();
+        });
+
+        // Force fresh load on every visit
+        if ('caches' in window) {
+            caches.keys().then((names) => {
+                names.forEach((name) => {
+                    caches.delete(name);
+                });
+            });
+        }
     </script>
 </body>
 </html>
