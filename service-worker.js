@@ -1,34 +1,31 @@
 // service-worker.js
-const CACHE_NAME = 'my-site-cache-v1';
+const CACHE_NAME = 'stopwatch-cache-v2';
 const urlsToCache = [
     '/',
     '/index.html',
-    '/style.css',
-    '/app.js'
+    '/style.css'
 ];
 
-// Install event: cache all necessary assets
+// Installation: Cache all assets
 self.addEventListener('install', event => {
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then(cache => {
-                console.log('Opened cache');
+                console.log('SW Installed and cached files');
                 return cache.addAll(urlsToCache);
             })
     );
 });
 
-// Fetch event: serve cached assets when offline
+// Fetch: Intercept requests and serve from cache if available
 self.addEventListener('fetch', event => {
     event.respondWith(
         caches.match(event.request)
             .then(response => {
-                // If the asset is in the cache, serve it from there
                 if (response) {
-                    return response;
+                    return response; // Serve from cache
                 }
-                // Otherwise, try to fetch from the network
-                return fetch(event.request);
+                return fetch(event.request); // Fallback to network
             })
     );
 });
