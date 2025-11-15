@@ -3,84 +3,383 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Offline Stopwatch</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Offline App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: #333;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #fff;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .status {
+            text-align: center;
+            color: #fff;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .status.online {
+            color: #4ade80;
+        }
+
+        .status.offline {
+            color: #ef4444;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .card h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #4a90e2;
+            box-shadow: 0 0 5px rgba(74, 144, 226, 0.3);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        button {
+            background: #4a90e2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        button:hover {
+            background: #357abd;
+        }
+
+        button.delete {
+            background: #ef4444;
+            padding: 5px 10px;
+            margin-right: 0;
+            margin-bottom: 0;
+        }
+
+        button.delete:hover {
+            background: #dc2626;
+        }
+
+        ul {
+            list-style: none;
+        }
+
+        li {
+            background: #f5f5f5;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #noteDisplay {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            min-height: 80px;
+        }
+
+        .calc-display {
+            background: #333;
+            color: #4ade80;
+            padding: 15px;
+            border-radius: 4px;
+            text-align: right;
+            font-size: 24px;
+            margin-bottom: 15px;
+            font-weight: bold;
+            word-wrap: break-word;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        .calc-buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        .calc-btn {
+            padding: 15px;
+            font-size: 16px;
+            background: #ddd;
+            color: #333;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        .calc-btn:hover {
+            background: #ccc;
+        }
+
+        .calc-btn.operator {
+            background: #4a90e2;
+            color: white;
+        }
+
+        .calc-btn.operator:hover {
+            background: #357abd;
+        }
+
+        .date-time {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 18px;
+            margin-top: 10px;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <h1>Offline Stopwatch</h1>
-        <p id="status">Status: Online</p>
-        <div class="stopwatch">
-            <span id="display">00:00:00</span>
-            <div class="buttons">
-                <button id="startStopBtn">Start</button>
-                <button id="resetBtn">Reset</button>
+        <h1>📱 Offline App</h1>
+        <div class="status" id="status">Online</div>
+
+        <!-- Todo -->
+        <div class="card">
+            <h2>✓ Todo List</h2>
+            <input type="text" id="todoInput" placeholder="Add a task..." />
+            <button onclick="addTodo()">Add Task</button>
+            <ul id="todoList"></ul>
+        </div>
+
+        <!-- Notes -->
+        <div class="card">
+            <h2>📝 Notes</h2>
+            <textarea id="noteInput" placeholder="Write your notes here..."></textarea>
+            <button onclick="saveNote()">Save Note</button>
+            <div id="noteDisplay"></div>
+        </div>
+
+        <!-- Calculator -->
+        <div class="card">
+            <h2>🔢 Calculator</h2>
+            <div class="calc-display" id="calcDisplay">0</div>
+            <div class="calc-buttons">
+                <button class="calc-btn operator" onclick="clearCalc()">C</button>
+                <button class="calc-btn operator" onclick="deleteCalc()">DEL</button>
+                <button class="calc-btn operator" onclick="appendCalc('/')">/</button>
+                <button class="calc-btn operator" onclick="appendCalc('*')">*</button>
+                
+                <button class="calc-btn" onclick="appendCalc('7')">7</button>
+                <button class="calc-btn" onclick="appendCalc('8')">8</button>
+                <button class="calc-btn" onclick="appendCalc('9')">9</button>
+                <button class="calc-btn operator" onclick="appendCalc('-')">-</button>
+                
+                <button class="calc-btn" onclick="appendCalc('4')">4</button>
+                <button class="calc-btn" onclick="appendCalc('5')">5</button>
+                <button class="calc-btn" onclick="appendCalc('6')">6</button>
+                <button class="calc-btn operator" onclick="appendCalc('+')">+</button>
+                
+                <button class="calc-btn" onclick="appendCalc('1')">1</button>
+                <button class="calc-btn" onclick="appendCalc('2')">2</button>
+                <button class="calc-btn" onclick="appendCalc('3')">3</button>
+                <button class="calc-btn operator" onclick="appendCalc('.')">.​</button>
+                
+                <button class="calc-btn" onclick="appendCalc('0')" style="grid-column: span 2;">0</button>
+                <button class="calc-btn operator" style="grid-column: span 2;" onclick="calculateResult()">=</button>
             </div>
         </div>
+
+        <!-- Date and Time -->
+        <div class="card">
+            <h2>🕐 Date & Time (UTC)</h2>
+            <div class="date-time" id="dateTime"></div>
+        </div>
     </div>
+
     <script>
-        // Register the Service Worker
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js')
-                    .then(registration => console.log('SW registered'))
-                    .catch(err => console.error('SW registration failed:', err));
-            });
-        }
-
-        // Stopwatch Logic
-        let startTime = 0;
-        let elapsedTime = 0;
-        let timerInterval;
-        let running = false;
-
-        const display = document.getElementById('display');
-        const startStopBtn = document.getElementById('startStopBtn');
-        const resetBtn = document.getElementById('resetBtn');
-        const statusEl = document.getElementById('status');
-
-        function formatTime(ms) {
-            const date = new Date(ms);
-            const minutes = date.getMinutes().toString().padStart(2, '0');
-            const seconds = date.getSeconds().toString().padStart(2, '0');
-            const milliseconds = Math.floor(date.getMilliseconds() / 10).toString().padStart(2, '0');
-            return `${minutes}:${seconds}:${milliseconds}`;
-        }
-
-        function startStop() {
-            if (!running) {
-                startTime = Date.now() - elapsedTime;
-                timerInterval = setInterval(function printTime() {
-                    elapsedTime = Date.now() - startTime;
-                    display.textContent = formatTime(elapsedTime);
-                }, 10);
-                startStopBtn.textContent = 'Stop';
-                running = true;
+        // Update online/offline status
+        function updateStatus() {
+            const status = document.getElementById('status');
+            if (navigator.onLine) {
+                status.textContent = '🟢 Online';
+                status.className = 'status online';
             } else {
-                clearInterval(timerInterval);
-                startStopBtn.textContent = 'Start';
-                running = false;
+                status.textContent = '🔴 Offline';
+                status.className = 'status offline';
             }
         }
 
-        function reset() {
-            clearInterval(timerInterval);
-            elapsedTime = 0;
-            display.textContent = '00:00:00';
-            startStopBtn.textContent = 'Start';
-            running = false;
-        }
-
-        startStopBtn.addEventListener('click', startStop);
-        resetBtn.addEventListener('click', reset);
-
-        // Simple Online/Offline Status Indicator
-        function updateStatus() {
-            statusEl.textContent = `Status: ${navigator.onLine ? 'Online' : 'Offline'}`;
-        }
         window.addEventListener('online', updateStatus);
         window.addEventListener('offline', updateStatus);
         updateStatus();
+
+        // Update date and time
+        function updateDateTime() {
+            const now = new Date();
+            const utcString = now.toISOString().replace('T', ' ').substring(0, 19);
+            document.getElementById('dateTime').textContent = utcString;
+        }
+
+        setInterval(updateDateTime, 1000);
+        updateDateTime();
+
+        // TODO LIST
+        function addTodo() {
+            const input = document.getElementById('todoInput');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const li = document.createElement('li');
+            li.textContent = text;
+            
+            const btn = document.createElement('button');
+            btn.textContent = 'Delete';
+            btn.className = 'delete';
+            btn.onclick = function() {
+                li.remove();
+                saveTodos();
+            };
+            
+            li.appendChild(btn);
+            document.getElementById('todoList').appendChild(li);
+            input.value = '';
+            saveTodos();
+        }
+
+        function saveTodos() {
+            const todos = Array.from(document.querySelectorAll('#todoList li'))
+                .map(li => li.textContent.replace('Delete', '').trim());
+            localStorage.setItem('todos', JSON.stringify(todos));
+        }
+
+        function loadTodos() {
+            const todos = JSON.parse(localStorage.getItem('todos') || '[]');
+            todos.forEach(todo => {
+                const li = document.createElement('li');
+                li.textContent = todo;
+                
+                const btn = document.createElement('button');
+                btn.textContent = 'Delete';
+                btn.className = 'delete';
+                btn.onclick = function() {
+                    li.remove();
+                    saveTodos();
+                };
+                
+                li.appendChild(btn);
+                document.getElementById('todoList').appendChild(li);
+            });
+        }
+
+        // NOTES
+        function saveNote() {
+            const text = document.getElementById('noteInput').value;
+            document.getElementById('noteDisplay').textContent = text;
+            localStorage.setItem('note', text);
+            document.getElementById('noteInput').value = '';
+        }
+
+        function loadNote() {
+            const note = localStorage.getItem('note') || '';
+            if (note) {
+                document.getElementById('noteDisplay').textContent = note;
+            }
+        }
+
+        // CALCULATOR
+        let calcValue = '0';
+
+        function appendCalc(val) {
+            if (calcValue === '0') {
+                calcValue = val;
+            } else {
+                calcValue += val;
+            }
+            updateCalcDisplay();
+        }
+
+        function clearCalc() {
+            calcValue = '0';
+            updateCalcDisplay();
+        }
+
+        function deleteCalc() {
+            calcValue = calcValue.slice(0, -1) || '0';
+            updateCalcDisplay();
+        }
+
+        function calculateResult() {
+            try {
+                calcValue = eval(calcValue).toString();
+            } catch (e) {
+                calcValue = 'Error';
+            }
+            updateCalcDisplay();
+        }
+
+        function updateCalcDisplay() {
+            document.getElementById('calcDisplay').textContent = calcValue;
+        }
+
+        // ENTER key support for todo
+        document.getElementById('todoInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addTodo();
+            }
+        });
+
+        // Load data on page load
+        loadTodos();
+        loadNote();
     </script>
 </body>
 </html>
