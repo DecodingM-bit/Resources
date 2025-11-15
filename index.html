@@ -240,8 +240,79 @@ font-family: "Times New Roman", Times, serif;
         </div>
 
 <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+            .then(function(registration) {
+                console.log('Service Worker registered with scope:', registration.scope);
+            }).catch(function(error) {
+                console.log('Service Worker registration failed:', error);
+            });
+        }
+    
+// sw.js
 
+const cacheName = 'v1';
+const cachedFiles = [
+  '/',
+  '/index.html',
+  '/style.css',
+  '/script.js',
+  '/images/logo.png'
+];
 
+// Install event - Cache files
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(cacheName).then(cache => {
+      console.log('Opened cache');
+      return cache.addAll(cachedFiles);
+    })
+  );
+});
+
+// Activate event - Clean old caches
+self.addEventListener('activate', event => {
+  const cacheWhitelist = [cacheName];
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cache => {
+          if (!cacheWhitelist.includes(cache)) {
+            return caches.delete(cache);
+          }
+        })
+      );
+    })
+  );
+});
+
+// Fetch event - Serve cached content when offline
+self.addEventListener('fetch', event => {
+  event.respondWith(
+    caches.match(event.request).then(response => {
+      return response || fetch(event.request);
+    })
+  );
+});
+// meow
+    const cacheName = 'v2';
+    
+    // Activate event - Clean old caches
+self.addEventListener('activate', event => {
+  const cacheWhitelist = [cacheName];  // Ensure the new cache version is kept
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cache => {
+          if (!cacheWhitelist.includes(cache)) {
+            return caches.delete(cache);  // Delete old caches
+          }
+        })
+      );
+    })
+  );
+});
+    
     function applyWordWrap() {
         const wordsPerLine = parseInt(document.getElementById('words-per-line').value);
         if (isNaN(wordsPerLine) || wordsPerLine <= 0) return;
