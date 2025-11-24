@@ -1,0 +1,187 @@
+textarea {
+  resize: none;
+}
+
+#item-editor td {
+  display:inline-block;
+  text-align:left;
+}
+#item-editor {
+  height: unset;
+}
+
+.trade {
+  border-radius:5px;
+  background-color: #1a1a2c;
+  color: white;
+  cursor:pointer;
+  vertical-align:middle;
+  font-size: 20pt;
+  letter-spacing: -6px;
+  position:relative;
+  padding:3px 8px;
+  margin-bottom:2px;
+  width:185px;
+  /*width: 250px;*/
+  margin-left:14px;
+}
+
+.trade .tiereditor2 { display: none; width: 70px; margin-bottom: 5px; }
+
+#grouplist.groupview .trade {
+  width: 185px;
+}
+
+#grouplist.groupview .trade .tiereditor2 {
+  display: unset;
+}
+
+.trade.selected {
+  color: #dad9dc;
+  background-color: #5f5e70;
+}
+
+.tradeitemcount {
+  font-size:10pt;
+  letter-spacing:0px;
+  margin-left: -18px;
+  min-width:20px;
+  position:absolute;
+  bottom:5px;
+  text-align:right;
+}
+
+.trade:hover {
+  padding:0px 5px;
+  border:3px solid #5f5e70;
+  /*border:3px solid #1a1a2c;*/
+}
+
+.trade.selected:hover {
+  padding:0px 5px;
+  /*border:3px solid #5f5e70;*/
+}
+
+.trade:hover .tradeitemcount {
+  bottom:2px;
+}
+
+.trade img {
+  image-rendering: pixelated;
+  width:32px;
+  height:32px;
+}
+
+#grouplist {
+  vertical-align:top;
+  min-width: 2vw;
+  overflow-y:scroll;
+  height:40vh;
+}
+
+#grouplist details {
+  width:215px;
+}
+
+#grouplist details summary {
+  text-align:left;
+}
+
+#tradelist-container {
+  padding: 5px;
+}
+
+textarea.app-input {
+  text-indent: unset;
+  padding: 2px 7px;
+}
+
+textarea::-webkit-scrollbar {
+    width: 5px;
+  cursor: pointer;
+}
+
+textarea::-webkit-scrollbar-track {
+    -webkit-box-shadow: unset;
+  cursor: pointer;
+}
+
+textarea::-webkit-scrollbar-thumb {
+  background-color: darkgrey;
+  outline: 1px solid slategrey;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+#grouplist::-webkit-scrollbar {
+  width: 5px;
+  cursor: pointer;
+}
+
+#grouplist::-webkit-scrollbar-track {
+    -webkit-box-shadow: unset;
+  cursor: pointer;
+}
+
+#grouplist::-webkit-scrollbar-thumb {
+  background-color: darkgrey;
+  outline: 1px solid slategrey;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.app-input-tiers {
+  width: 50px;
+  border: 3px solid #40404c;
+  border-radius: 15px;
+  height: 30px;
+  text-align:center;
+  font-family: 'Minecraftia';
+  background-color: #acadc2;
+  color: black;
+}
+
+.app-input-tiers.selected {
+    border: 3px solid #1d1d25;
+    background-color: #40404c;
+  color:white;
+}
+
+input[type=text].app-input {
+  width:100px;
+}
+
+.app-input {
+  border-radius: 15px;
+}
+
+.selectlist {
+  width:10vw;
+  height:58vh;
+}
+
+#identifiers_list {
+  height:calc(100% - 45px);
+  overflow-y:scroll;
+  text-align:left;
+  overflow-x:hidden;
+  text-overflow:clip;
+  width:15vw;
+}
+
+.app-main {
+  border-spacing: 15px 4px;
+}
+
+.import-button { display: block; border-radius: 10px 10px 0px 0px; }
+.export-button { border-radius: 0px; }
+.preview-button { border-radius: 0px 0px 10px 10px; }
+
+.embedded-frame .import-button { display: none; }
+.embedded-frame .export-button { border-radius: 10px; }
+.embedded-frame .preview-button { display: none; }
+
+#item-preview mcitem progress {
+  height: 10px;
+  bottom: -7px;
+}
