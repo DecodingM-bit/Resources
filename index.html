@@ -14,6 +14,11 @@
         .gradient-bg {
             background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
         }
+        
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nabla&display=swap" rel="stylesheet">
+        
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen flex flex-col">
@@ -21,9 +26,11 @@
     <!-- Header -->
     <header class="gradient-bg text-white shadow-lg">
         <div class="container mx-auto px-4 py-8 text-center">
+                <div class="heading">
+<h1 class="font-effect-emboss">Public Resources</h1>
             <h1 class="text-3xl md:text-4xl font-bold mb-2">Public Resources</h1>
             <p class="text-blue-100 max-w-2xl mx-auto">
-                Access and download the latest PDFs, documents, and materials directly from this repository.
+                Access and download the latest PDFs, documents, and materials for class 12 directly from this repository.
             </p>
         </div>
     </header>
@@ -57,7 +64,7 @@
     <!-- Footer -->
     <footer class="bg-white border-t border-gray-200 mt-auto">
         <div class="container mx-auto px-4 py-6 text-center text-gray-500 text-sm">
-            &copy; <span id="year"></span> Resource Portal. Hosted on GitHub.
+            &copy; <span id="year"></span> Resource Portal.
         </div>
     </footer>
 
@@ -67,7 +74,7 @@
         // ==========================================
         const files = [
             {
-                name: "Pr.pdf",
+                name: "Exp.7 Physics Practical.pdf",
                 category: "Document",
                 size: "2.4 MB",
                 date: "Oct 24, 2025",
