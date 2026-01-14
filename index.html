@@ -2,220 +2,273 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resource Downloads</title>
-    <!-- Tailwind CSS for Styling -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-
-    
-        
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Nabla&display=swap" rel="stylesheet">
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ultimate Split Viewer</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
-        body { font-family: 'Inter', sans-serif; }
-        .gradient-bg {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        :root {
+            --bg-color: #808080; /* Grey Background as requested */
+            --nav-bg: rgba(50, 50, 50, 0.9);
         }
-        .heading {
-  font-family: "Nabla", system-ui;
-  font-optical-sizing: auto;
-  font-weight: 400;
-  font-style: normal;
-font-size: 23px;
-  font-variation-settings:
-    "EDPT" 100,
-    "EHLT" 12;
- height: 30px;
 
-}
+        body, html {
+            margin: 0; padding: 0;
+            height: 100%; width: 100%;
+            background-color: var(--bg-color);
+            font-family: sans-serif;
+            overflow: hidden;
+            color: white;
+        }
+
+        /* --- Header Logic --- */
+        #navbar {
+            position: fixed;
+            top: 0; width: 100%; height: 60px;
+            background: var(--nav-bg);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 15px; box-sizing: border-box;
+            z-index: 1000;
+            transition: opacity 0.4s, transform 0.4s;
+        }
+
+        #navbar.faded {
+            opacity: 0;
+            transform: translateY(-100%);
+            pointer-events: none;
+        }
+
+        .nav-group { display: flex; align-items: center; gap: 10px; }
+
+        .icon-mode {
+            width: 35px; height: 35px;
+            cursor: pointer;
+            background: white; border-radius: 5px;
+            padding: 3px; object-fit: contain;
+        }
+
+        .btn {
+            background: #444; color: white; border: 1px solid #666;
+            padding: 8px 12px; border-radius: 4px; cursor: pointer;
+        }
+
+        .search-box {
+            background: #222; border: 1px solid #555;
+            color: white; padding: 6px; border-radius: 4px; width: 100px;
+        }
+
+        /* --- Split Screen Layouts --- */
+        #main-wrapper {
+            display: flex;
+            width: 100vw;
+            height: 100vh;
+            padding: 0; margin: 0;
+        }
+
+        /* 4 Layout Modes */
+        .mode-v { flex-direction: column; } /* Stacked */
+        .mode-h { flex-direction: row; }    /* Side-by-Side */
+
+        .viewer-pane {
+            flex: 1;
+            border: 1px solid #444;
+            background: #999;
+            position: relative;
+            overflow: hidden;
+        }
+
+        object, iframe, img {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .label-tip {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            color: #444; font-weight: bold; pointer-events: none;
+        }
+
+        /* --- History Sidebar --- */
+        #history-panel {
+            position: fixed; right: 0; top: 0;
+            width: 260px; height: 100%;
+            background: #333; z-index: 1001;
+            transform: translateX(100%);
+            transition: 0.3s; padding: 20px;
+            box-shadow: -5px 0 15px rgba(0,0,0,0.3);
+        }
+        #history-panel.open { transform: translateX(0); }
+        .history-item {
+            padding: 10px; background: #444;
+            margin-bottom: 10px; border-radius: 4px;
+            cursor: pointer; font-size: 13px;
+            display: flex; justify-content: space-between;
+        }
+
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen flex flex-col">
+<body onscroll="handleScroll()" onclick="showNav()">
 
-    <!-- Header -->
-    <header class="gradient-bg text-white shadow-lg">
-        <div class="container mx-auto px-4 py-8 text-center">
-                <div class="heading">
-<h1 class="font-effect-emboss">Public Resources</h1>
-                </div>
-         <!--  <h1 class="text-3xl md:text-4xl font-bold mb-2">Public Resources</h1> -->
-            <p class="text-blue-100 max-w-2xl mx-auto">
-                Access and download the latest PDFs, documents, and materials for class 12 directly from this repository.
-            </p>
+    <nav id="navbar">
+        <div class="nav-group">
+            <button class="btn" onclick="openFile(1)">📂 File 1</button>
+            <button class="btn" onclick="openFile(2)">📂 File 2</button>
+            
+            <!-- Custom Icons from your request -->
+            <img src="https://cdn-icons-png.flaticon.com/512/4538/4538547.png" 
+                 class="icon-mode" onclick="setLayout('h')" title="Landscape: Side-by-Side / Portrait: Side-by-Side">
+            
+            <img src="https://cdn-icons-png.flaticon.com/512/4538/4538557.png" 
+                 class="icon-mode" onclick="setLayout('v')" title="Landscape: Stacked / Portrait: Stacked">
         </div>
-    </header>
 
-    <!-- Main Content -->
-    <main class="flex-grow container mx-auto px-4 py-8 max-w-4xl">
+        <div class="nav-group">
+            <input type="text" class="search-box" placeholder="🔍 Search..." oninput="renderHistory(this.value)">
+            <button class="btn" onclick="toggleHistory()">🕒 History</button>
+        </div>
+    </nav>
+
+    <!-- Hidden File Inputs -->
+    <input type="file" id="fileInput1" hidden onchange="handleFile(event, 1)">
+    <input type="file" id="fileInput2" hidden onchange="handleFile(event, 2)">
+
+    <div id="main-wrapper" class="mode-v">
+        <div id="pane1" class="viewer-pane">
+            <div class="label-tip">PDF/IMG 1</div>
+        </div>
+        <div id="pane2" class="viewer-pane">
+            <div class="label-tip">PDF/IMG 2</div>
+        </div>
+    </div>
+
+    <div id="history-panel">
+        <h3>Last 5 Files</h3>
+        <div id="history-list"></div>
+        <button class="btn" onclick="toggleHistory()" style="width:100%">Close</button>
+    </div>
+
+<script>
+    let db;
+    let autoHideTimer;
+    let fileCount = 0;
+
+    // 1. Setup IndexedDB (The only way to save actual files for later)
+    const request = indexedDB.open("SplitViewerDB", 1);
+    request.onupgradeneeded = e => {
+        e.target.result.createObjectStore("files", { keyPath: "name" });
+    };
+    request.onsuccess = e => {
+        db = e.target.result;
+        renderHistory();
+    };
+
+    // 2. File Handling
+    function openFile(id) { document.getElementById('fileInput' + id).click(); }
+
+    function handleFile(event, slot) {
+        const file = event.target.files[0];
+        if (!file) return;
         
-        <!-- Search Bar -->
-        <div class="mb-8 relative">
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <i data-lucide="search" class="h-5 w-5 text-gray-400"></i>
-            </div>
-            <input type="text" id="searchInput" 
-                class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm shadow-sm transition duration-150 ease-in-out" 
-                placeholder="Search for files...">
-        </div>
+        displayFile(file, slot);
+        saveFile(file);
+    }
 
-        <!-- File List Container -->
-        <div id="fileList" class="space-y-4">
-            <!-- Files will be injected here by JavaScript -->
-        </div>
-
-        <!-- Empty State (Hidden by default) -->
-        <div id="noResults" class="hidden text-center py-12">
-            <i data-lucide="file-question" class="h-12 w-12 text-gray-400 mx-auto mb-3"></i>
-            <p class="text-gray-500 text-lg">No files match your search.</p>
-        </div>
-
-    </main>
-
-    <!-- Footer -->
-    <footer class="bg-white border-t border-gray-200 mt-auto">
-        <div class="container mx-auto px-4 py-6 text-center text-gray-500 text-sm">
-            &copy; <span id="year"></span> Resource Portal. Made by Sahin 😁
-        </div>
-    </footer>
-
-    <script>
-        // ==========================================
-        //  USER CONFIGURATION - EDIT THIS LIST
-        // =======================================  
-        const files = [
-            {
-                name: "Exp.10 Physics Practical.pdf",
-                size: "2.4 MB",
-                date: "Dec 03, 2025",
-               category: "Document",
-                path: "downloads/🔟 potential gradient of wire expt" 
-            },
-            {
-                name: "Exp.8 Physics Practical",
-                size: "450 KB",
-                date: "Nov 02, 2026",
-                                category: "Document",
-                path: "downloads/Phy Exp.8 .pdf"
-            },
-                 {
-                name: "Exp.9 Physics Practical.pdf",
-                
-                size: "2.4 MB",
-                date: "Dec 03, 2025",
-                                     category: "Document",
-                path: "downloads/9️⃣Internal Resistance of potentiometer expt.pdf" 
-            },
-            {
-                name: "Exp.11 Physics Practical.pdf",
-               
-                size: "7 MB",
-                date: "Dec 03, 2025",
-                                category: "Document",
-                path: "downloads/1️⃣1️⃣Veriify serirs and parallel combination of resistance expt.pdf"
-            },
-         
-            {
-                name: "Exp.8 2nd part phys.pdf",
-                category: "Education",
-                size: "1.2 MB",
-                date: "Dec 03, 2025",
-                path: "downloads/[No.8 2nd part] Tow mor Experiment .pdf"
-            },
-            {
-                name: "Empty.docx",
-                category: "Guide",
-                size: "800 KB",
-                date: "Nov 15, 2023",
-                path: "downloads/Installation_Guide.docx"
-            },
-            {
-                name: "Empty.zip",
-                category: "Archive",
-                size: "15 MB",
-                date: "Nov 20, 2023",
-                path: "downloads/Source_Code_Bundle.zip"
-            }
-        ];
-
-        // ==========================================
-        //  APP LOGIC (Do not edit below unless comfortable)
-        // ==========================================
-
-        document.getElementById('year').textContent = new Date().getFullYear();
-        lucide.createIcons();
-
-        const fileListContainer = document.getElementById('fileList');
-        const searchInput = document.getElementById('searchInput');
-        const noResults = document.getElementById('noResults');
-
-        function getIconType(filename) {
-            const ext = filename.split('.').pop().toLowerCase();
-            if (['pdf'].includes(ext)) return 'file-text';
-            if (['jpg', 'png', 'jpeg', 'gif', 'svg'].includes(ext)) return 'image';
-            if (['zip', 'rar', '7z'].includes(ext)) return 'folder-archive';
-            if (['csv', 'xls', 'xlsx'].includes(ext)) return 'sheet';
-            return 'file';
+    function displayFile(file, slot) {
+        const pane = document.getElementById('pane' + slot);
+        const url = URL.createObjectURL(file);
+        
+        // Using <object> with a fallback for Mobile
+        if (file.type === "application/pdf") {
+            pane.innerHTML = `
+                <object data="${url}" type="application/pdf">
+                    <iframe src="${url}">
+                        <p>This browser does not support inline PDFs. <a href="${url}">Download PDF</a></p>
+                    </iframe>
+                </object>`;
+        } else {
+            pane.innerHTML = `<img src="${url}" style="object-fit:contain">`;
         }
 
-        function renderFiles(filterText = '') {
-            fileListContainer.innerHTML = '';
-            const lowerFilter = filterText.toLowerCase();
+        fileCount++;
+        if (fileCount >= 2) goFullscreen();
+    }
 
-            const filteredFiles = files.filter(file => 
-                file.name.toLowerCase().includes(lowerFilter) || 
-                file.category.toLowerCase().includes(lowerFilter)
-            );
+    // 3. Persistent History Logic
+    function saveFile(file) {
+        const transaction = db.transaction(["files"], "readwrite");
+        const store = transaction.objectStore("files");
+        
+        // Store actual File blob
+        store.put({ name: file.name, blob: file, type: file.type, date: Date.now() });
 
-            if (filteredFiles.length === 0) {
-                noResults.classList.remove('hidden');
-            } else {
-                noResults.classList.add('hidden');
-                
-                filteredFiles.forEach(file => {
-                    const iconName = getIconType(file.name);
-                    
-                    const card = document.createElement('div');
-                    card.className = "bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4";
-                    
-                    card.innerHTML = `
-                        <div class="flex items-center gap-4 w-full sm:w-auto overflow-hidden">
-                            <div class="bg-blue-50 p-3 rounded-lg text-blue-600 flex-shrink-0">
-                                <i data-lucide="${iconName}"></i>
-                            </div>
-                            <div class="min-w-0">
-                                <h3 class="font-semibold text-gray-900 truncate" title="${file.name}">${file.name}</h3>
-                                <p class="text-sm text-gray-500 flex items-center gap-2">
-                                    <span class="inline-block px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-600">${file.category}</span>
-                                    <span>&bull;</span>
-                                    <span>${file.size}</span>
-                                    <span class="hidden sm:inline">&bull;</span>
-                                    <span class="hidden sm:inline">${file.date}</span>
-                                </p>
-                            </div>
-                        </div>
-                        <a href="${file.path}" download class="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors">
-                            <i data-lucide="download" class="w-4 h-4"></i>
-                            Download
-                        </a>
-                    `;
-                    fileListContainer.appendChild(card);
-                });
-                lucide.createIcons();
-            }
+        // Clean up: Keep only 5
+        store.getAll().onsuccess = e => {
+            const all = e.target.result.sort((a,b) => b.date - a.date);
+            if (all.length > 5) store.delete(all[all.length-1].name);
+            renderHistory();
+        };
+    }
+
+    function renderHistory(search = "") {
+        if (!db) return;
+        const list = document.getElementById('history-list');
+        db.transaction("files").objectStore("files").getAll().onsuccess = e => {
+            const files = e.target.result.sort((a,b) => b.date - a.date);
+            list.innerHTML = "";
+            files.filter(f => f.name.toLowerCase().includes(search.toLowerCase())).forEach(f => {
+                const div = document.createElement('div');
+                div.className = 'history-item';
+                div.innerHTML = `<span>${f.name.substring(0,20)}...</span>`;
+                div.onclick = () => {
+                    displayFile(f.blob, 1);
+                    toggleHistory();
+                };
+                list.appendChild(div);
+            });
+        };
+    }
+
+    // 4. Layout & Design
+    function setLayout(mode) {
+        const wrapper = document.getElementById('main-wrapper');
+        wrapper.className = (mode === 'v') ? 'mode-v' : 'mode-h';
+    }
+
+    // 5. Interaction (Fading Header)
+    function showNav() {
+        const nav = document.getElementById('navbar');
+        nav.classList.remove('faded');
+        clearTimeout(autoHideTimer);
+        autoHideTimer = setTimeout(() => {
+            nav.classList.add('faded');
+        }, 3000); 
+    }
+
+    function handleScroll() {
+        // If user scrolls up, hide
+        if (window.scrollY < 10) {
+            document.getElementById('navbar').classList.add('faded');
         }
+    }
 
-        // Initial Render
-        renderFiles();
+    function toggleHistory() {
+        document.getElementById('history-panel').classList.toggle('open');
+    }
 
-        // Search Listener
-        searchInput.addEventListener('input', (e) => {
-            renderFiles(e.target.value);
-        });
-    </script>
+    function goFullscreen() {
+        const doc = document.documentElement;
+        if (doc.requestFullscreen) doc.requestFullscreen();
+        else if (doc.webkitRequestFullscreen) doc.webkitRequestFullscreen();
+    }
+
+    // Detect Orientation for default behaviors
+    window.addEventListener('resize', () => {
+        const isLandscape = window.innerWidth > window.innerHeight;
+        // Default landscape to horizontal split, portrait to vertical stack
+        setLayout(isLandscape ? 'h' : 'v');
+    });
+
+    // Init
+    showNav();
+</script>
 </body>
 </html>
