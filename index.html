@@ -2,32 +2,40 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ultimate Split Viewer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro Split Viewer</title>
     <style>
         :root {
-            --bg-color: #808080; /* Grey Background as requested */
-            --nav-bg: rgba(50, 50, 50, 0.9);
+            --bg-grey: #333333;
+            --nav-bg: rgba(40, 40, 40, 0.95);
         }
 
         body, html {
-            margin: 0; padding: 0;
-            height: 100%; width: 100%;
-            background-color: var(--bg-color);
-            font-family: sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            background-color: var(--bg-grey);
+            font-family: 'Segoe UI', sans-serif;
             overflow: hidden;
             color: white;
         }
 
-        /* --- Header Logic --- */
+        /* Navigation Header */
         #navbar {
             position: fixed;
-            top: 0; width: 100%; height: 60px;
+            top: 0;
+            width: 100%;
+            height: 60px;
             background: var(--nav-bg);
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 0 15px; box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 15px;
+            box-sizing: border-box;
             z-index: 1000;
-            transition: opacity 0.4s, transform 0.4s;
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
         }
 
         #navbar.faded {
@@ -36,239 +44,252 @@
             pointer-events: none;
         }
 
-        .nav-group { display: flex; align-items: center; gap: 10px; }
-
-        .icon-mode {
-            width: 35px; height: 35px;
-            cursor: pointer;
-            background: white; border-radius: 5px;
-            padding: 3px; object-fit: contain;
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .btn {
-            background: #444; color: white; border: 1px solid #666;
-            padding: 8px 12px; border-radius: 4px; cursor: pointer;
+            background: #555;
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
         }
 
-        .search-box {
-            background: #222; border: 1px solid #555;
-            color: white; padding: 6px; border-radius: 4px; width: 100px;
+        .btn:hover { background: #777; }
+
+        .search-container {
+            position: relative;
+            display: flex;
+            align-items: center;
         }
 
-        /* --- Split Screen Layouts --- */
-        #main-wrapper {
+        .search-input {
+            background: #222;
+            border: 1px solid #444;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            outline: none;
+        }
+
+        .mode-icon {
+            width: 32px;
+            height: 32px;
+            cursor: pointer;
+            transition: 0.2s;
+            background: white;
+            border-radius: 4px;
+            padding: 2px;
+        }
+
+        /* Split Screen Container */
+        #main-container {
             display: flex;
             width: 100vw;
             height: 100vh;
-            padding: 0; margin: 0;
+            padding: 0;
+            margin: 0;
         }
 
-        /* 4 Layout Modes */
-        .mode-v { flex-direction: column; } /* Stacked */
-        .mode-h { flex-direction: row; }    /* Side-by-Side */
-
-        .viewer-pane {
+        .viewer-box {
             flex: 1;
-            border: 1px solid #444;
-            background: #999;
-            position: relative;
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #222;
+            background: #444;
+            position: relative;
         }
 
-        object, iframe, img {
+        iframe, embed {
             width: 100%;
             height: 100%;
             border: none;
         }
 
-        .label-tip {
-            position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            color: #444; font-weight: bold; pointer-events: none;
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #888;
         }
 
-        /* --- History Sidebar --- */
+        /* Layout Orientations */
+        .split-v { flex-direction: column; }
+        .split-h { flex-direction: row; }
+
+        /* History Sidebar */
         #history-panel {
-            position: fixed; right: 0; top: 0;
-            width: 260px; height: 100%;
-            background: #333; z-index: 1001;
+            position: fixed;
+            right: 0;
+            top: 60px;
+            width: 250px;
+            height: calc(100% - 60px);
+            background: #222;
+            z-index: 999;
             transform: translateX(100%);
-            transition: 0.3s; padding: 20px;
-            box-shadow: -5px 0 15px rgba(0,0,0,0.3);
+            transition: 0.3s;
+            padding: 15px;
+            box-shadow: -2px 0 10px rgba(0,0,0,0.5);
         }
         #history-panel.open { transform: translateX(0); }
-        .history-item {
-            padding: 10px; background: #444;
-            margin-bottom: 10px; border-radius: 4px;
-            cursor: pointer; font-size: 13px;
-            display: flex; justify-content: space-between;
+        .hist-item {
+            padding: 10px;
+            border-bottom: 1px solid #444;
+            cursor: pointer;
+            font-size: 13px;
         }
-
+        .hist-item:hover { background: #333; }
     </style>
 </head>
-<body onscroll="handleScroll()" onclick="showNav()">
+<body onmousemove="resetTimer()" onclick="resetTimer()">
 
-    <nav id="navbar">
-        <div class="nav-group">
-            <button class="btn" onclick="openFile(1)">📂 File 1</button>
-            <button class="btn" onclick="openFile(2)">📂 File 2</button>
-            
-            <!-- Custom Icons from your request -->
-            <img src="https://cdn-icons-png.flaticon.com/512/4538/4538547.png" 
-                 class="icon-mode" onclick="setLayout('h')" title="Landscape: Side-by-Side / Portrait: Side-by-Side">
-            
-            <img src="https://cdn-icons-png.flaticon.com/512/4538/4538557.png" 
-                 class="icon-mode" onclick="setLayout('v')" title="Landscape: Stacked / Portrait: Stacked">
-        </div>
-
-        <div class="nav-group">
-            <input type="text" class="search-box" placeholder="🔍 Search..." oninput="renderHistory(this.value)">
-            <button class="btn" onclick="toggleHistory()">🕒 History</button>
-        </div>
-    </nav>
-
-    <!-- Hidden File Inputs -->
-    <input type="file" id="fileInput1" hidden onchange="handleFile(event, 1)">
-    <input type="file" id="fileInput2" hidden onchange="handleFile(event, 2)">
-
-    <div id="main-wrapper" class="mode-v">
-        <div id="pane1" class="viewer-pane">
-            <div class="label-tip">PDF/IMG 1</div>
-        </div>
-        <div id="pane2" class="viewer-pane">
-            <div class="label-tip">PDF/IMG 2</div>
-        </div>
+<nav id="navbar">
+    <div class="controls">
+        <button class="btn" onclick="triggerInput(1)">📂 Open 1</button>
+        <button class="btn" onclick="triggerInput(2)">📂 Open 2</button>
+        
+        <img src="https://cdn-icons-png.flaticon.com/512/4538/4538547.png" 
+             class="mode-icon" onclick="setLayout('h')" title="Side-by-Side">
+        
+        <img src="https://cdn-icons-png.flaticon.com/512/4538/4538557.png" 
+             class="mode-icon" onclick="setLayout('v')" title="Stacked">
     </div>
 
-    <div id="history-panel">
-        <h3>Last 5 Files</h3>
-        <div id="history-list"></div>
-        <button class="btn" onclick="toggleHistory()" style="width:100%">Close</button>
+    <div class="controls">
+        <div class="search-container">
+            <span style="margin-right:5px">🔍</span>
+            <input type="text" class="search-input" placeholder="Search history..." oninput="filterHistory(this.value)">
+        </div>
+        <button class="btn" onclick="toggleHistory()">🕒 History</button>
     </div>
+</nav>
+
+<input type="file" id="file1" hidden onchange="loadFile(event, 1)">
+<input type="file" id="file2" hidden onchange="loadFile(event, 2)">
+
+<div id="main-container" class="split-v">
+    <div id="box1" class="viewer-box">
+        <div class="empty-state">Slot 1 Empty</div>
+    </div>
+    <div id="box2" class="viewer-box">
+        <div class="empty-state">Slot 2 Empty</div>
+    </div>
+</div>
+
+<div id="history-panel">
+    <h3>Recent Files</h3>
+    <div id="history-list"></div>
+</div>
 
 <script>
-    let db;
-    let autoHideTimer;
-    let fileCount = 0;
+    let fadeTimer;
+    let currentLayout = 'v'; // v = stacked, h = side-by-side
+    let filesLoaded = [false, false];
 
-    // 1. Setup IndexedDB (The only way to save actual files for later)
-    const request = indexedDB.open("SplitViewerDB", 1);
-    request.onupgradeneeded = e => {
-        e.target.result.createObjectStore("files", { keyPath: "name" });
-    };
-    request.onsuccess = e => {
-        db = e.target.result;
-        renderHistory();
-    };
+    // --- File Logic ---
+    function triggerInput(id) {
+        document.getElementById('file' + id).click();
+    }
 
-    // 2. File Handling
-    function openFile(id) { document.getElementById('fileInput' + id).click(); }
-
-    function handleFile(event, slot) {
+    function loadFile(event, slot) {
         const file = event.target.files[0];
         if (!file) return;
-        
-        displayFile(file, slot);
-        saveFile(file);
-    }
 
-    function displayFile(file, slot) {
-        const pane = document.getElementById('pane' + slot);
-        const url = URL.createObjectURL(file);
+        const container = document.getElementById('box' + slot);
+        const url = URL.createObjectURL(file); // Most reliable for PDFs
         
-        // Using <object> with a fallback for Mobile
         if (file.type === "application/pdf") {
-            pane.innerHTML = `
-                <object data="${url}" type="application/pdf">
-                    <iframe src="${url}">
-                        <p>This browser does not support inline PDFs. <a href="${url}">Download PDF</a></p>
-                    </iframe>
-                </object>`;
+            container.innerHTML = `<embed src="${url}" type="application/pdf">`;
+        } else if (file.type.startsWith("image/")) {
+            container.innerHTML = `<img src="${url}" style="object-fit:contain; width:100%; height:100%;">`;
         } else {
-            pane.innerHTML = `<img src="${url}" style="object-fit:contain">`;
+            container.innerHTML = `<div class="empty-state">Unsupported format</div>`;
         }
 
-        fileCount++;
-        if (fileCount >= 2) goFullscreen();
+        filesLoaded[slot-1] = true;
+        saveToHistory(file.name);
+        checkFullscreen();
     }
 
-    // 3. Persistent History Logic
-    function saveFile(file) {
-        const transaction = db.transaction(["files"], "readwrite");
-        const store = transaction.objectStore("files");
-        
-        // Store actual File blob
-        store.put({ name: file.name, blob: file, type: file.type, date: Date.now() });
-
-        // Clean up: Keep only 5
-        store.getAll().onsuccess = e => {
-            const all = e.target.result.sort((a,b) => b.date - a.date);
-            if (all.length > 5) store.delete(all[all.length-1].name);
-            renderHistory();
-        };
+    // --- History Logic (Using LocalStorage) ---
+    function saveToHistory(name) {
+        let history = JSON.parse(localStorage.getItem('viewer_history') || '[]');
+        if (!history.includes(name)) {
+            history.unshift(name);
+            if (history.length > 5) history.pop();
+            localStorage.setItem('viewer_history', JSON.stringify(history));
+            updateHistoryUI();
+        }
     }
 
-    function renderHistory(search = "") {
-        if (!db) return;
+    function updateHistoryUI(filter = '') {
         const list = document.getElementById('history-list');
-        db.transaction("files").objectStore("files").getAll().onsuccess = e => {
-            const files = e.target.result.sort((a,b) => b.date - a.date);
-            list.innerHTML = "";
-            files.filter(f => f.name.toLowerCase().includes(search.toLowerCase())).forEach(f => {
-                const div = document.createElement('div');
-                div.className = 'history-item';
-                div.innerHTML = `<span>${f.name.substring(0,20)}...</span>`;
-                div.onclick = () => {
-                    displayFile(f.blob, 1);
-                    toggleHistory();
-                };
-                list.appendChild(div);
-            });
-        };
+        const history = JSON.parse(localStorage.getItem('viewer_history') || '[]');
+        list.innerHTML = '';
+        
+        history.filter(name => name.toLowerCase().includes(filter.toLowerCase())).forEach(name => {
+            const div = document.createElement('div');
+            div.className = 'hist-item';
+            div.innerText = name;
+            list.appendChild(div);
+        });
     }
 
-    // 4. Layout & Design
-    function setLayout(mode) {
-        const wrapper = document.getElementById('main-wrapper');
-        wrapper.className = (mode === 'v') ? 'mode-v' : 'mode-h';
-    }
-
-    // 5. Interaction (Fading Header)
-    function showNav() {
-        const nav = document.getElementById('navbar');
-        nav.classList.remove('faded');
-        clearTimeout(autoHideTimer);
-        autoHideTimer = setTimeout(() => {
-            nav.classList.add('faded');
-        }, 3000); 
-    }
-
-    function handleScroll() {
-        // If user scrolls up, hide
-        if (window.scrollY < 10) {
-            document.getElementById('navbar').classList.add('faded');
-        }
+    function filterHistory(val) {
+        updateHistoryUI(val);
     }
 
     function toggleHistory() {
         document.getElementById('history-panel').classList.toggle('open');
     }
 
-    function goFullscreen() {
-        const doc = document.documentElement;
-        if (doc.requestFullscreen) doc.requestFullscreen();
-        else if (doc.webkitRequestFullscreen) doc.webkitRequestFullscreen();
+    // --- Layout & Orientation ---
+    function setLayout(type) {
+        currentLayout = type;
+        const container = document.getElementById('main-container');
+        container.className = (type === 'v') ? 'split-v' : 'split-h';
     }
 
-    // Detect Orientation for default behaviors
+    // Handle orientation auto-detect
     window.addEventListener('resize', () => {
         const isLandscape = window.innerWidth > window.innerHeight;
-        // Default landscape to horizontal split, portrait to vertical stack
-        setLayout(isLandscape ? 'h' : 'v');
+        // You can add auto-layout logic here if desired
     });
 
-    // Init
-    showNav();
+    // --- UI UX Effects ---
+    function resetTimer() {
+        const nav = document.getElementById('navbar');
+        nav.classList.remove('faded');
+        clearTimeout(fadeTimer);
+        fadeTimer = setTimeout(() => {
+            nav.classList.add('faded');
+        }, 3000); // Fades after 3 seconds of no activity
+    }
+
+    function checkFullscreen() {
+        if (filesLoaded[0] && filesLoaded[1]) {
+            const elem = document.documentElement;
+            if (elem.requestFullscreen) elem.requestFullscreen();
+        }
+    }
+
+    // Initial Hide/Show logic
+    window.onscroll = () => {
+        document.getElementById('navbar').classList.add('faded');
+    };
+
+    // Initialize UI
+    updateHistoryUI();
+    resetTimer();
 </script>
+
 </body>
 </html>
