@@ -3,293 +3,268 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro Split Viewer</title>
+    <title>Split File Viewer</title>
     <style>
         :root {
-            --bg-grey: #333333;
-            --nav-bg: rgba(40, 40, 40, 0.95);
+            --bg-color: #808080; /* Grey Background */
+            --panel-bg: #f0f0f0;
+            --ui-opacity: 0.8;
         }
 
         body, html {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            width: 100%;
-            background-color: var(--bg-grey);
-            font-family: 'Segoe UI', sans-serif;
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
+            background-color: var(--bg-color);
             overflow: hidden;
-            color: white;
+            font-family: sans-serif;
         }
 
-        /* Navigation Header */
-        #navbar {
+        /* UI Panel Styling */
+        #ui-panel {
             position: fixed;
-            top: 0;
-            width: 100%;
+            top: 0; left: 0; right: 0;
             height: 60px;
-            background: var(--nav-bg);
+            background: rgba(255, 255, 255, var(--ui-opacity));
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            padding: 0 15px;
-            box-sizing: border-box;
+            justify-content: space-around;
             z-index: 1000;
-            transition: opacity 0.5s ease, transform 0.5s ease;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            transition: transform 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
         }
 
-        #navbar.faded {
-            opacity: 0;
-            transform: translateY(-100%);
-            pointer-events: none;
+        #ui-panel.hidden { transform: translateY(-100%); }
+
+        .ui-btn {
+            background: none; border: none; cursor: pointer;
+            font-size: 20px; padding: 5px; display: flex; align-items: center;
         }
 
-        .controls {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+        .ui-btn img { width: 30px; height: 30px; }
 
-        .btn {
-            background: #555;
-            border: none;
-            color: white;
-            padding: 8px 12px;
-            border-radius: 4px;
+        #show-ui-btn {
+            position: fixed;
+            top: 10px; right: 10px;
+            z-index: 999;
+            background: rgba(255, 255, 255, 0.4);
+            border: none; border-radius: 50%;
+            width: 40px; height: 40px;
             cursor: pointer;
-            font-size: 13px;
         }
 
-        .btn:hover { background: #777; }
-
-        .search-container {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-
-        .search-input {
-            background: #222;
-            border: 1px solid #444;
-            color: white;
-            padding: 5px 10px;
-            border-radius: 20px;
-            outline: none;
-        }
-
-        .mode-icon {
-            width: 32px;
-            height: 32px;
-            cursor: pointer;
-            transition: 0.2s;
-            background: white;
-            border-radius: 4px;
-            padding: 2px;
-        }
-
-        /* Split Screen Container */
+        /* Container & Split Logic */
         #main-container {
             display: flex;
-            width: 100vw;
-            height: 100vh;
-            padding: 0;
-            margin: 0;
+            width: 100vw; height: 100vh;
+            flex-direction: row; /* Default: Landscape Vertical Split */
         }
 
-        .viewer-box {
+        .slot {
             flex: 1;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            border: 1px solid #222;
-            background: #444;
             position: relative;
+            background: #fff;
+            overflow: hidden;
         }
 
-        iframe, embed {
-            width: 100%;
-            height: 100%;
-            border: none;
+        .slot object, .slot img {
+            width: 100%; height: 100%;
+            border: none; object-fit: contain;
         }
 
-        .empty-state {
+        /* Divider */
+        #divider {
+            background: #333;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100%;
-            color: #888;
+            color: white;
+            cursor: ew-resize;
+            user-select: none;
+            z-index: 10;
         }
 
-        /* Layout Orientations */
-        .split-v { flex-direction: column; }
-        .split-h { flex-direction: row; }
+        /* Orientation Modes */
+        .mode-v #main-container { flex-direction: row; }
+        .mode-v #divider { width: 15px; height: 100%; cursor: ew-resize; }
 
-        /* History Sidebar */
-        #history-panel {
-            position: fixed;
-            right: 0;
-            top: 60px;
-            width: 250px;
-            height: calc(100% - 60px);
-            background: #222;
-            z-index: 999;
-            transform: translateX(100%);
-            transition: 0.3s;
-            padding: 15px;
-            box-shadow: -2px 0 10px rgba(0,0,0,0.5);
+        .mode-h #main-container { flex-direction: column; }
+        .mode-h #divider { height: 15px; width: 100%; cursor: ns-resize; }
+
+        /* Invert Filter */
+        .inverted { filter: invert(1) hue-rotate(180deg); }
+
+        /* History Popover */
+        #history-list {
+            position: absolute; top: 70px; left: 50%;
+            transform: translateX(-50%);
+            background: white; border-radius: 8px;
+            padding: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            display: none; z-index: 1001;
         }
-        #history-panel.open { transform: translateX(0); }
-        .hist-item {
-            padding: 10px;
-            border-bottom: 1px solid #444;
-            cursor: pointer;
-            font-size: 13px;
-        }
-        .hist-item:hover { background: #333; }
     </style>
 </head>
-<body onmousemove="resetTimer()" onclick="resetTimer()">
+<body class="mode-v">
 
-<nav id="navbar">
-    <div class="controls">
-        <button class="btn" onclick="triggerInput(1)">📂 Open 1</button>
-        <button class="btn" onclick="triggerInput(2)">📂 Open 2</button>
-        
-        <img src="https://cdn-icons-png.flaticon.com/512/4538/4538547.png" 
-             class="mode-icon" onclick="setLayout('h')" title="Side-by-Side">
-        
-        <img src="https://cdn-icons-png.flaticon.com/512/4538/4538557.png" 
-             class="mode-icon" onclick="setLayout('v')" title="Stacked">
-    </div>
+    <button id="show-ui-btn">▲</button>
 
-    <div class="controls">
-        <div class="search-container">
-            <span style="margin-right:5px">🔍</span>
-            <input type="text" class="search-input" placeholder="Search history..." oninput="filterHistory(this.value)">
+    <div id="ui-panel">
+        <div style="display: flex; gap: 10px;">
+            <input type="file" id="fileInput" hidden multiple accept="application/pdf,image/*">
+            <button class="ui-btn" onclick="document.getElementById('fileInput').click()">🔍 Open</button>
+            <button class="ui-btn" id="toggleLayout" title="Change Layout">
+                <img id="layoutIcon" src="https://www.flaticon.com/free-icon/landscape-mode_4538547" alt="Landscape">
+            </button>
         </div>
-        <button class="btn" onclick="toggleHistory()">🕒 History</button>
-    </div>
-</nav>
 
-<input type="file" id="file1" hidden onchange="loadFile(event, 1)">
-<input type="file" id="file2" hidden onchange="loadFile(event, 2)">
-
-<div id="main-container" class="split-v">
-    <div id="box1" class="viewer-box">
-        <div class="empty-state">Slot 1 Empty</div>
+        <div style="display: flex; gap: 10px;">
+            <button class="ui-btn" onclick="toggleInvert()" title="Invert Colors">🌑/🌞</button>
+            <button class="ui-btn" onclick="toggleFullScreen()" title="Full Screen">⛶</button>
+            <button class="ui-btn" onclick="toggleHistory()" title="History">📜</button>
+            <button class="ui-btn" onclick="hidePanel()">▼</button>
+        </div>
     </div>
-    <div id="box2" class="viewer-box">
-        <div class="empty-state">Slot 2 Empty</div>
-    </div>
-</div>
 
-<div id="history-panel">
-    <h3>Recent Files</h3>
     <div id="history-list"></div>
-</div>
 
-<script>
-    let fadeTimer;
-    let currentLayout = 'v'; // v = stacked, h = side-by-side
-    let filesLoaded = [false, false];
+    <div id="main-container">
+        <div id="slot1" class="slot"><div style="text-align: center; margin-top: 40vh;">Slot 1: Select File</div></div>
+        <div id="divider">║</div>
+        <div id="slot2" class="slot"><div style="text-align: center; margin-top: 40vh;">Slot 2: Select File</div></div>
+    </div>
 
-    // --- File Logic ---
-    function triggerInput(id) {
-        document.getElementById('file' + id).click();
-    }
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const slot1 = document.getElementById('slot1');
+        const slot2 = document.getElementById('slot2');
+        const divider = document.getElementById('divider');
+        const uiPanel = document.getElementById('ui-panel');
+        const layoutIcon = document.getElementById('layoutIcon');
+        const historyList = document.getElementById('history-list');
+        let hideTimeout;
 
-    function loadFile(event, slot) {
-        const file = event.target.files[0];
-        if (!file) return;
+        // Icons from user
+        const ICON_LANDSCAPE = "https://cdn-icons-png.flaticon.com/512/4538/4538547.png";
+        const ICON_PORTRAIT = "https://cdn-icons-png.flaticon.com/512/4538/4538557.png";
 
-        const container = document.getElementById('box' + slot);
-        const url = URL.createObjectURL(file); // Most reliable for PDFs
-        
-        if (file.type === "application/pdf") {
-            container.innerHTML = `<embed src="${url}" type="application/pdf">`;
-        } else if (file.type.startsWith("image/")) {
-            container.innerHTML = `<img src="${url}" style="object-fit:contain; width:100%; height:100%;">`;
-        } else {
-            container.innerHTML = `<div class="empty-state">Unsupported format</div>`;
+        // State
+        let currentLayout = 'v'; // 'v' for vertical split, 'h' for horizontal split
+        let file1 = null, file2 = null;
+
+        // Auto-Hide Logic
+        function resetTimer() {
+            uiPanel.classList.remove('hidden');
+            clearTimeout(hideTimeout);
+            hideTimeout = setTimeout(() => uiPanel.classList.add('hidden'), 4000);
         }
 
-        filesLoaded[slot-1] = true;
-        saveToHistory(file.name);
-        checkFullscreen();
-    }
+        document.addEventListener('mousemove', resetTimer);
+        document.addEventListener('click', resetTimer);
+        document.getElementById('show-ui-btn').onclick = resetTimer;
+        function hidePanel() { uiPanel.classList.add('hidden'); }
 
-    // --- History Logic (Using LocalStorage) ---
-    function saveToHistory(name) {
-        let history = JSON.parse(localStorage.getItem('viewer_history') || '[]');
-        if (!history.includes(name)) {
-            history.unshift(name);
-            if (history.length > 5) history.pop();
-            localStorage.setItem('viewer_history', JSON.stringify(history));
-            updateHistoryUI();
+        // File Loading
+        fileInput.onchange = (e) => {
+            const files = e.target.files;
+            if (files.length > 0) {
+                loadFile(files[0], slot1);
+                saveHistory(files[0].name);
+                
+                if (files.length === 1) {
+                    if (confirm("Suggest: Open the same file in Slot 2?")) {
+                        loadFile(files[0], slot2);
+                    }
+                } else if (files.length > 1) {
+                    loadFile(files[1], slot2);
+                }
+                
+                checkFullScreenTrigger();
+            }
+        };
+
+        function loadFile(file, container) {
+            const url = URL.createObjectURL(file);
+            const type = file.type;
+            container.innerHTML = '';
+            
+            let el;
+            if (type.includes('pdf')) {
+                el = document.createElement('object');
+                el.data = url;
+                el.type = "application/pdf";
+            } else {
+                el = document.createElement('img');
+                el.src = url;
+            }
+            container.appendChild(el);
+            if (container === slot1) file1 = file; else file2 = file;
         }
-    }
 
-    function updateHistoryUI(filter = '') {
-        const list = document.getElementById('history-list');
-        const history = JSON.parse(localStorage.getItem('viewer_history') || '[]');
-        list.innerHTML = '';
-        
-        history.filter(name => name.toLowerCase().includes(filter.toLowerCase())).forEach(name => {
-            const div = document.createElement('div');
-            div.className = 'hist-item';
-            div.innerText = name;
-            list.appendChild(div);
-        });
-    }
+        // Layout Toggle
+        document.getElementById('toggleLayout').onclick = () => {
+            if (currentLayout === 'v') {
+                document.body.classList.remove('mode-v');
+                document.body.classList.add('mode-h');
+                layoutIcon.src = ICON_PORTRAIT;
+                currentLayout = 'h';
+            } else {
+                document.body.classList.remove('mode-h');
+                document.body.classList.add('mode-v');
+                layoutIcon.src = ICON_LANDSCAPE;
+                currentLayout = 'v';
+            }
+        };
 
-    function filterHistory(val) {
-        updateHistoryUI(val);
-    }
+        // Resizer Logic
+        let isDragging = false;
+        divider.onmousedown = (e) => { isDragging = true; };
+        document.onmouseup = () => { isDragging = false; };
+        document.onmousemove = (e) => {
+            if (!isDragging) return;
+            if (currentLayout === 'v') {
+                let percentage = (e.clientX / window.innerWidth) * 100;
+                slot1.style.flex = `0 0 ${percentage}%`;
+            } else {
+                let percentage = (e.clientY / window.innerHeight) * 100;
+                slot1.style.flex = `0 0 ${percentage}%`;
+            }
+        };
 
-    function toggleHistory() {
-        document.getElementById('history-panel').classList.toggle('open');
-    }
-
-    // --- Layout & Orientation ---
-    function setLayout(type) {
-        currentLayout = type;
-        const container = document.getElementById('main-container');
-        container.className = (type === 'v') ? 'split-v' : 'split-h';
-    }
-
-    // Handle orientation auto-detect
-    window.addEventListener('resize', () => {
-        const isLandscape = window.innerWidth > window.innerHeight;
-        // You can add auto-layout logic here if desired
-    });
-
-    // --- UI UX Effects ---
-    function resetTimer() {
-        const nav = document.getElementById('navbar');
-        nav.classList.remove('faded');
-        clearTimeout(fadeTimer);
-        fadeTimer = setTimeout(() => {
-            nav.classList.add('faded');
-        }, 3000); // Fades after 3 seconds of no activity
-    }
-
-    function checkFullscreen() {
-        if (filesLoaded[0] && filesLoaded[1]) {
-            const elem = document.documentElement;
-            if (elem.requestFullscreen) elem.requestFullscreen();
+        // Fullscreen Functions
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
         }
-    }
 
-    // Initial Hide/Show logic
-    window.onscroll = () => {
-        document.getElementById('navbar').classList.add('faded');
-    };
+        function checkFullScreenTrigger() {
+            if (file1 && file2) document.documentElement.requestFullscreen();
+        }
 
-    // Initialize UI
-    updateHistoryUI();
-    resetTimer();
-</script>
+        // Invert Function
+        function toggleInvert() {
+            slot1.classList.toggle('inverted');
+            slot2.classList.toggle('inverted');
+        }
 
+        // History Logic
+        function saveHistory(name) {
+            let history = JSON.parse(localStorage.getItem('viewerHistory') || '[]');
+            history = [name, ...history.filter(n => n !== name)].slice(0, 3);
+            localStorage.setItem('viewerHistory', JSON.stringify(history));
+        }
+
+        function toggleHistory() {
+            if (historyList.style.display === 'block') {
+                historyList.style.display = 'none';
+                return;
+            }
+            const history = JSON.parse(localStorage.getItem('viewerHistory') || '[]');
+            historyList.innerHTML = '<strong>Recent Files:</strong><br>' + 
+                history.map(name => `<div style="padding:5px; border-bottom:1px solid #ddd; font-size:12px;">${name}</div>`).join('') || 'No history';
+            historyList.style.display = 'block';
+        }
+    </script>
 </body>
 </html>
